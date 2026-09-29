@@ -362,7 +362,9 @@ class FSDPCheckpointManager(BaseCheckpointManager):
 
                 with init_empty_weights():
                     save_model = auto_model_cls.from_config(
-                        model_config, torch_dtype=torch.bfloat16, trust_remote_code=self.trust_remote_code
+                        model_config,
+                        torch_dtype=next(value.dtype for value in state_dict.values() if value.is_floating_point()),
+                        trust_remote_code=self.trust_remote_code,
                     )
 
                 save_model.to_empty(device="cpu")
