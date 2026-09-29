@@ -12,11 +12,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
 import json
 
 import pytest
 
-from verl.workers.rollout.vllm_rollout.utils import build_cli_args_from_config
+from verl.workers.rollout.vllm_rollout.utils import apply_boolean_cli_config, build_cli_args_from_config
+
+
+def test_explicit_false_overrides_cli_default_true():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--enable_prefix_caching", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--enforce_eager", action="store_true")
+    config = {"enable_prefix_caching": False, "enforce_eager": True}
+    namespace = parser.parse_args(build_cli_args_from_config(config))
+    assert namespace.enable_prefix_caching is True
+    apply_boolean_cli_config(namespace, config)
+    assert namespace.enable_prefix_caching is False
+    assert namespace.enforce_eager is True
+
+
+def test_unspecified_boolean_keeps_cli_default_and_unknown_false_is_rejected():
+    namespace = argparse.Namespace(enable_prefix_caching=True)
+    apply_boolean_cli_config(namespace, {"enable_prefix_caching": None})
+    assert namespace.enable_prefix_caching is True
+    with pytest.raises(ValueError, match="unknown_option"):
+        apply_boolean_cli_config(namespace, {"unknown_option": False})
 
 
 class TestBuildCliArgsFromConfig:

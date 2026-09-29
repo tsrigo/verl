@@ -318,6 +318,20 @@ class SuppressSignalInThread:
         signal.signal = self.original_signal
 
 
+def apply_boolean_cli_config(namespace, config: dict[str, Any]) -> None:
+    """Keep explicit false values from reverting to the CLI's default true.
+
+    Not all supported CLI versions expose negative flags, so assign validated
+    boolean attributes after parsing and before engine argument validation.
+    """
+    for name, value in config.items():
+        if isinstance(value, bool):
+            attribute = name.replace("-", "_")
+            if not hasattr(namespace, attribute):
+                raise ValueError(f"Unsupported vLLM boolean option: {name}")
+            setattr(namespace, attribute, value)
+
+
 def build_cli_args_from_config(config: dict[str, Any]) -> list[str]:
     """
     Convert a config dictionary to CLI arguments for vLLM server.

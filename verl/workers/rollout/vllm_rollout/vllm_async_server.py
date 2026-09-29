@@ -48,6 +48,7 @@ from verl.workers.rollout.vllm_rollout.utils import (
     VLLM_LORA_NAME,
     VLLM_LORA_PATH,
     SuppressSignalInThread,
+    apply_boolean_cli_config,
     build_cli_args_from_config,
     extract_prompt_logprobs,
     get_vllm_max_lora_rank,
@@ -372,6 +373,7 @@ class vLLMHttpServer:
                 cmd.subparser_init(subparsers).set_defaults(dispatch_function=cmd.cmd)
                 cmds[cmd.name] = cmd
         server_args = parser.parse_args(args=server_args)
+        apply_boolean_cli_config(server_args, args)
         server_args.model = server_args.model_tag
         if server_args.subparser in cmds:
             cmds[server_args.subparser].validate(server_args)
