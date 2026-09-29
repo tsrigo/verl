@@ -44,6 +44,7 @@ from verl.utils.fsdp_utils import (
     FSDPModule,
     MixedPrecisionPolicy,
     apply_fsdp2,
+    cast_model_parameters,
     collect_lora_params,
     fsdp2_clip_grad_norm_,
     fsdp2_load_full_state_dict,
@@ -297,8 +298,9 @@ class FSDPEngine(BaseEngine):
                 fused_kernels_backend=fused_kernels_backend,
             )
 
-            # some parameters may not in torch_dtype
-            module.to(torch_dtype)
+            # Cast parameters only: HF initializes RoPE buffers in FP32, and a
+            # BF16 round trip changes the policy before its first update.
+            cast_model_parameters(module, torch_dtype)
 
             if self.model_config.enable_gradient_checkpointing:
                 module.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})

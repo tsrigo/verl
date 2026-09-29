@@ -60,6 +60,20 @@ def init_fn(x: torch.nn.Module):
     return x
 
 
+def cast_model_parameters(module: nn.Module, dtype: torch.dtype) -> nn.Module:
+    """Cast parameters without degrading model-initialized buffers such as RoPE frequencies.
+
+    Restoring a buffer's dtype after a blanket cast cannot recover its values.
+    Retain the original tensors through the cast, including nonpersistent and
+    shared buffers. FSDP applies its explicit buffer precision policy later.
+    """
+    buffers = [(child, name, value) for child in module.modules() for name, value in child._buffers.items()]
+    module.to(dtype=dtype)
+    for child, name, value in buffers:
+        child._buffers[name] = value
+    return module
+
+
 def get_init_weight_context_manager(use_meta_tensor=True, mesh: DeviceMesh = None):
     from accelerate import init_empty_weights
 
